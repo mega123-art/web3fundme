@@ -1,11 +1,6 @@
 use anchor_lang::prelude::*;
-
-declare_id!("DAddeAYBo1UdTWov3CjxT2wfKzh6X18bcPYSbNvv7Ga8");
-
-
-
 use anchor_spl::token::{self, Token, TokenAccount, Transfer, Mint};
-
+declare_id!("DAddeAYBo1UdTWov3CjxT2wfKzh6X18bcPYSbNvv7Ga8");
 
 
 #[program]
@@ -83,6 +78,7 @@ pub mod donation_matching {
     pub fn donate(ctx: Context<Donate>, amount: u64) -> Result<()> {
         require!(amount > 0, ErrorCode::InvalidDonationAmount);
         
+        let campaign_key = ctx.accounts.campaign.key();
         let campaign = &mut ctx.accounts.campaign;
         let platform = &mut ctx.accounts.platform;
         
@@ -103,7 +99,7 @@ pub mod donation_matching {
         // Update donation record
         let donation = &mut ctx.accounts.donation;
         donation.donor = ctx.accounts.donor.key();
-        donation.campaign = ctx.accounts.campaign.key();
+        donation.campaign = campaign_key;
         donation.amount = amount;
         donation.matching_amount = matching_amount;
         donation.total_amount = total_contribution;
@@ -194,7 +190,7 @@ pub mod donation_matching {
             authority: ctx.accounts.vault_auth.to_account_info(),
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program.clone(), cpi_accounts, signer);
         token::transfer(cpi_ctx, withdrawal_amount)?;
 
         // Transfer platform fee if applicable
